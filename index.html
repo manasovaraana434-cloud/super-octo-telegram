@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ky">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Эмеректер Дүйнөсү</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS for Map Tracking -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #1A0F2E; color: #F4D7D4; }
+        .custom-card { background: #3B1B4F; border: 1px solid #7A2E6F; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="border-b border-[#7A2E6F] bg-[#1A0F2E]/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl font-bold tracking-wider text-[#FF6B6B]">ЭМЕРЕКТЕР ДҮЙНӨСҮ</span>
+        </div>
+        <button onclick="toggleCart()" class="bg-[#7A2E6F] hover:bg-[#D659BF] text-white px-5 py-2 rounded-full font-medium transition flex items-center space-x-2">
+            <span>Себет (<span id="cart-count">0</span>)</span>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-7xl">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-3 text-white">Эмеректер Дүйнөсү</h1>
+            <p class="text-[#F4D7D4]/80">Пастелдик жана заманбап минималистичный эмеректер топтому</p>
+        </div>
+
+        <!-- Catalog Grid -->
+        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Dynamically populated products -->
+        </div>
+    </main>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex justify-end">
+        <div class="bg-[#1A0F2E] w-full max-w-md h-full border-l border-[#7A2E6F] p-6 flex flex-col justify-between overflow-y-auto">
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">Сиздин Себет</h2>
+                    <button onclick="toggleCart()" class="text-[#F4D7D4] hover:text-white text-xl font-bold">✕</button>
+                </div>
+                <div id="cart-items" class="space-y-4 mb-6">
+                    <!-- Cart items -->
+                </div>
+            </div>
+
+            <div class="border-t border-[#7A2E6F] pt-4">
+                <div class="flex justify-between text-lg font-semibold mb-4 text-white">
+                    <span>Жалпы сумма:</span>
+                    <span id="cart-total">0 сом</span>
+                </div>
+
+                <!-- Delivery Options -->
+                <div class="mb-4">
+                    <label class="block text-sm mb-2 text-[#F4D7D4]">Жеткирүү ыкмасы:</label>
+                    <select id="delivery-type" class="w-full bg-[#3B1B4F] border border-[#7A2E6F] rounded-lg p-2.5 text-white">
+                        <option value="pickup">Өзү алып кетүү (Акысыз)</option>
+                        <option value="courier">Жүк ташуучу машина менен жеткирүү (+500 сом)</option>
+                    </select>
+                </div>
+
+                <div id="address-box" class="mb-4 hidden">
+                    <input type="text" id="delivery-address" placeholder="Бишкек ш., көчө / үй №..." class="w-full bg-[#3B1B4F] border border-[#7A2E6F] rounded-lg p-2.5 text-white placeholder-[#F4D7D4]/50">
+                </div>
+
+                <!-- Card Payment Form -->
+                <div class="mb-4 space-y-3">
+                    <label class="block text-sm text-[#F4D7D4]">Банк картасы:</label>
+                    <input type="text" placeholder="4200 0000 0000 0000" class="w-full bg-[#3B1B4F] border border-[#7A2E6F] rounded-lg p-2.5 text-white text-sm placeholder-[#F4D7D4]/50">
+                    <div class="flex space-x-2">
+                        <input type="text" placeholder="Ай/Жыл" class="w-1/2 bg-[#3B1B4F] border border-[#7A2E6F] rounded-lg p-2.5 text-white text-sm placeholder-[#F4D7D4]/50">
+                        <input type="text" placeholder="CVV" class="w-1/2 bg-[#3B1B4F] border border-[#7A2E6F] rounded-lg p-2.5 text-white text-sm placeholder-[#F4D7D4]/50">
+                    </div>
+                </div>
+
+                <button onclick="checkout()" class="w-full bg-[#FF6B6B] hover:bg-[#FF5252] text-white py-3 rounded-xl font-bold transition">
+                    Буюртманы Бекитүү
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Tracking Modal -->
+    <div id="tracking-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1A0F2E] border border-[#7A2E6F] w-full max-w-2xl rounded-2xl p-6 flex flex-col h-[500px]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white">🚚 Жүк ташуучу машина жолдо (Бишкек)</h2>
+                <button onclick="closeTracking()" class="text-white font-bold">✕</button>
+            </div>
+            <div id="map" class="flex-grow rounded-xl border border-[#7A2E6F]"></div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const products = [
+            { id: 1, name: "Пастелдик кызгылт диван", price: 24500, img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80" },
+            { id: 2, name: "Заманбап беж кресло", price: 12800, img: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=600&q=80" },
+            { id: 3, name: "Кочкул кызгылт көк бурчтук диван", price: 38000, img: "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=600&q=80" },
+            { id: 4, name: "Минималисттик ак диван", price: 29000, img: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80" },
+            { id: 5, name: "Пастелдик жумшак пуфик", price: 6500, img: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=600&q=80" },
+            { id: 6, name: "Премиум эс алуу креслосу", price: 15500, img: "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=600&q=80" }
+        ];
+
+        let cart = [];
+        let map, truckMarker;
+
+        const grid = document.getElementById('product-grid');
+        products.forEach(p => {
+            grid.innerHTML += `
+                <div class="custom-card rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between">
+                    <img src="${p.img}" alt="${p.name}" class="h-48 w-full object-cover">
+                    <div class="p-4 flex flex-col flex-grow justify-between">
+                        <div>
+                            <h3 class="font-semibold text-white mb-1">${p.name}</h3>
+                            <p class="text-[#FF6B6B] font-bold mb-4">${p.price} сом</p>
+                        </div>
+                        <button onclick="addToCart(${p.id})" class="w-full bg-[#7A2E6F] hover:bg-[#D659BF] text-white py-2 rounded-xl text-sm transition font-medium">Себетке кошуу</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            cart.push(product);
+            updateCart();
+        }
+
+        function updateCart() {
+            document.getElementById('cart-count').innerText = cart.length;
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            let total = 0;
+            
+            cart.forEach((item, index) => {
+                total += item.price;
+                container.innerHTML += `
+                    <div class="flex justify-between items-center bg-[#3B1B4F] p-3 rounded-xl border border-[#7A2E6F]">
+                        <span class="text-sm text-white">${item.name}</span>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-sm text-[#FF6B6B]">${item.price} сом</span>
+                            <button onclick="removeFromCart(${index})" class="text-red-400 hover:text-red-300">✕</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const deliveryType = document.getElementById('delivery-type').value;
+            if(deliveryType === 'courier' && cart.length > 0) total += 500;
+
+            document.getElementById('cart-total').innerText = total + ' сом';
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCart();
+        }
+
+        function toggleCart() {
+            const modal = document.getElementById('cart-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        document.getElementById('delivery-type').addEventListener('change', (e) => {
+            const addrBox = document.getElementById('address-box');
+            if(e.target.value === 'courier') {
+                addrBox.classList.remove('hidden');
+            } else {
+                addrBox.classList.add('hidden');
+            }
+            updateCart();
+        });
+
+        function checkout() {
+            if(cart.length === 0) {
+                alert('Себетиңиз бош!');
+                return;
+            }
+            toggleCart();
+            document.getElementById('tracking-modal').classList.remove('hidden');
+            initMap();
+        }
+
+        function initMap() {
+            if(!map) {
+                // Bishkek coordinates
+                map = L.map('map').setView([42.8746, 74.5698], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                
+                // Custom icon for truck
+                const truckIcon = L.divIcon({
+                    html: '<div style="font-size: 28px; background: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">🚚</div>',
+                    className: 'custom-truck-icon',
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                });
+
+                truckMarker = L.marker([42.8746, 74.5698], { icon: truckIcon }).addTo(map).bindPopup('Жүк ташуучу машина эмеректи жеткирип жатат...').openPopup();
+            }
+            
+            // Simulating truck movement
+            let lat = 42.8746, lng = 74.5698;
+            let interval = setInterval(() => {
+                lat += 0.0008;
+                lng += 0.0008;
+                truckMarker.setLatLng([lat, lng]);
+                map.setView([lat, lng]);
+            }, 3000);
+        }
+
+        function closeTracking() {
+            document.getElementById('tracking-modal').classList.add('hidden');
+            cart = [];
+            updateCart();
+        }
+    </script>
+</body>
+</html>
